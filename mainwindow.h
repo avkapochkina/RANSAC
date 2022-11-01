@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QGraphicsScene>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -16,8 +17,6 @@ public:
     ~MainWindow();
 
 private slots:
-    void mousePressedEvent(QMouseEvent* event);
-
     void on_loadButton_clicked();
 
     void on_saveButton_pressed();
@@ -27,6 +26,19 @@ private slots:
     void on_pushButton_pressed();
 
 private:
+
     Ui::MainWindow *ui;
+
+    QGraphicsScene *scene;
+
+    QList<QPointF*> pointList;
+
+    void drawSinglePoint(QPointF point);
+
+    void drawPoints();
+
+    void mousePressEvent(QMouseEvent* event) override;
+
+    double radius = 1.0;
 };
 #endif // MAINWINDOW_H

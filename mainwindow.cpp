@@ -8,6 +8,11 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    scene = new QGraphicsScene();
+    ui->graphicsView->setMouseTracking(true);
+    //ui->graphicsView->setSceneRect(ui->graphicsView->rect());
+    ui->graphicsView->setScene(scene);
 }
 
 MainWindow::~MainWindow()
@@ -15,18 +20,20 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-
-void  MainWindow::mousePressedEvent(QMouseEvent* event)
+void  MainWindow::mousePressEvent(QMouseEvent* event)
 {
-    // doesnt work lol
     QPoint remapped = ui->graphicsView->mapFromParent(event->pos());
     if(ui->graphicsView->rect().contains(remapped))
     {
         QPointF mousePoint = ui->graphicsView->mapToScene(remapped);
-        QString testLabelText;
-        testLabelText.append(QString::number(mousePoint.rx()));
-        testLabelText.append(QString::number(mousePoint.ry()));
-        ui->testLabel->setText(testLabelText);
+        if(pointList.contains(mousePoint))
+        {
+            //удаление
+        }
+        else
+        {
+            drawSinglePoint(mousePoint);
+        }
     }
     else
     {
@@ -44,11 +51,29 @@ void MainWindow::on_loadButton_clicked()
     QFile loadFile(loadFileName);
     if(loadFile.open(QIODevice::ReadOnly))
     {
-        ui->testLabel->setText("loadFile success");
+        // вытащи в отдельную функцию
+        QTextStream load(&loadFile);
+        QString line;
+        while(!load.atEnd())
+        {
+            // тут зациклилось
+            line = load.readLine();
+            line.remove('(');
+            line.remove(')');
+            line.remove(' ');
+            QStringList coordinates = line.split(",");
+            QPointF point;
+            point.setX(coordinates.begin()->toDouble());
+            point.setY(coordinates.end()->toDouble());
+            pointList.append(&point);
+        }
+        loadFile.close();
+        drawPoints();
     }
     else
     {
         ui->testLabel->setText("loadFile fail");
+        //QMessageBox::information
     }
 }
 
@@ -65,6 +90,8 @@ void MainWindow::on_saveButton_pressed()
     if(saveFile.open(QIODevice::WriteOnly))
     {
         ui->testLabel->setText("loadFile success");
+        //
+        saveFile.close();
     }
     else
     {
@@ -84,3 +111,15 @@ void MainWindow::on_pushButton_pressed()
 
 }
 
+void MainWindow::drawSinglePoint(QPointF point)
+{
+   scene->addEllipse(point.x() - radius, point.y() - radius, radius * 2.0, radius * 2.0, QPen(), QBrush(Qt::SolidPattern));
+}
+
+void MainWindow::drawPoints()
+{
+    for(auto iter : pointList)
+    {
+        drawSinglePoint(*iter);
+    }
+}
