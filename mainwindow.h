@@ -31,7 +31,9 @@ private:
 
     QGraphicsScene *scene;
 
-    QList<QPointF*> pointList;
+    QList<QPointF> pointList;
+
+    QPointF lineToPoint(QString line);
 
     void drawSinglePoint(QPointF point);
 

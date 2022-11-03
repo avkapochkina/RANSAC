@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     scene = new QGraphicsScene();
     ui->graphicsView->setMouseTracking(true);
-    //ui->graphicsView->setSceneRect(ui->graphicsView->rect());
+    ui->graphicsView->setSceneRect(ui->graphicsView->rect());
     ui->graphicsView->setScene(scene);
 }
 
@@ -26,12 +26,32 @@ void  MainWindow::mousePressEvent(QMouseEvent* event)
     if(ui->graphicsView->rect().contains(remapped))
     {
         QPointF mousePoint = ui->graphicsView->mapToScene(remapped);
-        if(pointList.contains(mousePoint))
+        long long int i = -1;
+        // delta - радиус области вокруг точки, в которой засчитывается клик
+        const double delta = 0.1;
+        if(pointList.size() > 0)
         {
-            //удаление
+            for(int iter = 0; iter < pointList.size(); iter++)
+            {
+                const double pointListX = pointList.at(iter).x();
+                const double pointListY = pointList.at(iter).y();
+
+                const double dx = abs(mousePoint.x() - pointList.at(iter).x());
+                const double dy = abs(mousePoint.y() - pointList.at(iter).y());
+
+                if(dx < delta && dy < delta)
+                {
+                    i = iter;
+                }
+            }
+        }
+        if(i != -1)
+        {
+            pointList.remove(i);
         }
         else
         {
+            pointList.append(mousePoint);
             drawSinglePoint(mousePoint);
         }
     }
@@ -51,21 +71,19 @@ void MainWindow::on_loadButton_clicked()
     QFile loadFile(loadFileName);
     if(loadFile.open(QIODevice::ReadOnly))
     {
-        // вытащи в отдельную функцию
+        while(!pointList.isEmpty())
+        {
+            pointList.clear();
+        }
+
         QTextStream load(&loadFile);
-        QString line;
+        QString line; QPointF point;
         while(!load.atEnd())
         {
-            // тут зациклилось
             line = load.readLine();
-            line.remove('(');
-            line.remove(')');
-            line.remove(' ');
-            QStringList coordinates = line.split(",");
-            QPointF point;
-            point.setX(coordinates.begin()->toDouble());
-            point.setY(coordinates.end()->toDouble());
-            pointList.append(&point);
+            point = lineToPoint(line);
+            // append меняет весь вектор ???
+            pointList.append(point);
         }
         loadFile.close();
         drawPoints();
@@ -113,13 +131,32 @@ void MainWindow::on_pushButton_pressed()
 
 void MainWindow::drawSinglePoint(QPointF point)
 {
-   scene->addEllipse(point.x() - radius, point.y() - radius, radius * 2.0, radius * 2.0, QPen(), QBrush(Qt::SolidPattern));
+   scene->addEllipse(
+               point.x() - radius,
+               point.y() - radius,
+               radius * 2.0,
+               radius * 2.0,
+               QPen(),
+               QBrush(Qt::SolidPattern));
 }
 
 void MainWindow::drawPoints()
 {
     for(auto iter : pointList)
     {
-        drawSinglePoint(*iter);
+        drawSinglePoint(iter);
     }
+}
+
+QPointF MainWindow::lineToPoint(QString line)
+{
+    line.remove('(');
+    line.remove(')');
+    line.remove(' ');
+    QStringList coordinates = line.split(",");
+    QPointF point;
+    point.setX(coordinates.begin()->toDouble());
+    point.setY(coordinates.back().toDouble());
+    coordinates.clear();
+    return point;
 }
