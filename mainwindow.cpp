@@ -2,17 +2,18 @@
 #include "ui_mainwindow.h"
 #include <QMouseEvent>
 #include <QFileDialog>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
     scene = new QGraphicsScene();
     ui->graphicsView->setMouseTracking(true);
-    ui->graphicsView->setSceneRect(ui->graphicsView->rect());
+    //ui->graphicsView->setSceneRect(ui->graphicsView->rect());
     ui->graphicsView->setScene(scene);
+    gray = QColor(127, 127, 127, 255);
 }
 
 MainWindow::~MainWindow()
@@ -22,24 +23,21 @@ MainWindow::~MainWindow()
 
 void  MainWindow::mousePressEvent(QMouseEvent* event)
 {
+    // проверка попадания клика в существующую точку
+    // i - индекс точки в pointList
+    // при i = -1 осуществляется нанесение точки на график
+    // при i != -1 точка удаляется
     QPoint remapped = ui->graphicsView->mapFromParent(event->pos());
     if(ui->graphicsView->rect().contains(remapped))
     {
         QPointF mousePoint = ui->graphicsView->mapToScene(remapped);
         long long int i = -1;
-        // delta - радиус области вокруг точки, в которой засчитывается клик
-        const double delta = 0.1;
         if(pointList.size() > 0)
         {
             for(int iter = 0; iter < pointList.size(); iter++)
             {
-                const double pointListX = pointList.at(iter).x();
-                const double pointListY = pointList.at(iter).y();
-
-                const double dx = abs(mousePoint.x() - pointList.at(iter).x());
-                const double dy = abs(mousePoint.y() - pointList.at(iter).y());
-
-                if(dx < delta && dy < delta)
+                if(abs(mousePoint.x() - pointList.at(iter).x()) < delta
+                        && abs(mousePoint.y() - pointList.at(iter).y()) < delta)
                 {
                     i = iter;
                 }
@@ -47,17 +45,14 @@ void  MainWindow::mousePressEvent(QMouseEvent* event)
         }
         if(i != -1)
         {
+            drawSinglePoint(pointList.at(i), QColor(255, 255, 255, 255));
             pointList.remove(i);
         }
         else
         {
             pointList.append(mousePoint);
-            drawSinglePoint(mousePoint);
+            drawSinglePoint(mousePoint, gray);
         }
-    }
-    else
-    {
-        ui->testLabel->setText("miss");
     }
 }
 
@@ -65,55 +60,52 @@ void MainWindow::on_loadButton_clicked()
 {
     QString loadFileName = QFileDialog::getOpenFileName(
                 nullptr,
-                QObject::tr("Open Document"),
+                QObject::tr("Save Document"),
                 QDir::currentPath(),
-                QObject::tr("Text files (*.txt)"));
+                QObject::tr("Text file (*.txt)"));
     QFile loadFile(loadFileName);
     if(loadFile.open(QIODevice::ReadOnly))
     {
-        while(!pointList.isEmpty())
-        {
-            pointList.clear();
-        }
-
+        clearData();
         QTextStream load(&loadFile);
-        QString line; QPointF point;
+        QString line;
         while(!load.atEnd())
         {
             line = load.readLine();
-            point = lineToPoint(line);
-            // append меняет весь вектор ???
-            pointList.append(point);
+            pointList.append(lineToPoint(line));
         }
         loadFile.close();
-        drawPoints();
+        drawPoints(gray);
+        // resize?
     }
     else
     {
-        ui->testLabel->setText("loadFile fail");
-        //QMessageBox::information
+        QMessageBox::information(nullptr, "Error", "Файл не был выбран");
     }
 }
 
-
 void MainWindow::on_saveButton_pressed()
 {
-    QString saveFileName = QFileDialog::getOpenFileName(
+    QString saveFileName = QFileDialog::getSaveFileName(
                 nullptr,
                 QObject::tr("Open Document"),
                 QDir::currentPath(),
                 QObject::tr("Text files (*.txt)"));
 
     QFile saveFile(saveFileName);
-    if(saveFile.open(QIODevice::WriteOnly))
+    if(saveFile.open(QIODevice::ReadWrite))
     {
-        ui->testLabel->setText("loadFile success");
-        //
+        QTextStream save(&saveFile);
+        for(auto iter : pointList)
+        {
+            save << pointToLine(iter);
+            save << "\n";
+        }
         saveFile.close();
     }
     else
     {
-        ui->testLabel->setText("loadFile fail");
+        QMessageBox::information(nullptr, "Error", "Файл не был создан");
     }
 }
 
@@ -129,22 +121,28 @@ void MainWindow::on_pushButton_pressed()
 
 }
 
-void MainWindow::drawSinglePoint(QPointF point)
+void MainWindow::drawSinglePoint(QPointF point, QColor color)
 {
-   scene->addEllipse(
+    scene->addEllipse(
                point.x() - radius,
                point.y() - radius,
-               radius * 2.0,
-               radius * 2.0,
-               QPen(),
-               QBrush(Qt::SolidPattern));
+               radius,
+               radius,
+               QPen(color),
+               QBrush(color));
 }
 
-void MainWindow::drawPoints()
+void MainWindow::drawPoints(QColor color)
 {
     for(auto iter : pointList)
     {
-        drawSinglePoint(iter);
+        scene->addEllipse(
+                   iter.x() - radius,
+                   iter.y() - radius,
+                   radius,
+                   radius,
+                   QPen(color),
+                   QBrush(color));
     }
 }
 
@@ -159,4 +157,29 @@ QPointF MainWindow::lineToPoint(QString line)
     point.setY(coordinates.back().toDouble());
     coordinates.clear();
     return point;
+}
+
+QString MainWindow::pointToLine(QPointF point)
+{
+    QString line;
+    line.append('(');
+    line.append(QString::number(point.x()));
+    line.append(", ");
+    line.append(QString::number(point.y()));
+    line.append(')');
+    return line;
+}
+
+void MainWindow::on_clearButton_pressed()
+{
+    clearData();
+}
+
+void MainWindow::clearData()
+{
+    scene->clear();
+    while(!pointList.isEmpty())
+    {
+        pointList.clear();
+    }
 }
