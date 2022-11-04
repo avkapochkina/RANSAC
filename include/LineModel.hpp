@@ -9,10 +9,10 @@ class Point2D
 	: public GRANSAC::AbstractParameter
 {
 public:
-    Point2D(QPointF* point)
+    Point2D(QPointF point)
     {
-        m_Point2D[0] = point->x();
-        m_Point2D[1] = point->y();
+        m_Point2D[0] = point.x();
+        m_Point2D[1] = point.y();
     }
 
 	Point2D(GRANSAC::VPFloat x, GRANSAC::VPFloat y)

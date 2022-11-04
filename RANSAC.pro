@@ -1,5 +1,5 @@
 QT       += core gui
-
+QT += network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++11
@@ -30,4 +30,3 @@ QMAKE_CXXFLAGS += -fopenmp
 LIBS += -fopenmp
 INCLUDEPATH = D:\Qt\Tools\mingw810_64\lib\gcc\x86_64-w64-mingw32\8.1.0\include
 
-DISTFILES +=

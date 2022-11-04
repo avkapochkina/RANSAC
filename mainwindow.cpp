@@ -21,7 +21,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->timerLabel->setVisible(false);
     timer = new QTimer();
-    connect(timer, SIGNAL(timeout()), this, SLOT(updateTimer()));
+    connect(timer, &QTimer::timeout, this, SLOT(updateTimer()));
+
+    ui->lineTextLabel->setVisible(false);
+    ui->lineLabel->setVisible(false);
+
+    out = new QUdpSocket(this);
+    out->connectToHost(QHostAddress::LocalHost, 50081);
 }
 
 MainWindow::~MainWindow()
@@ -130,35 +136,20 @@ void MainWindow::on_calculationButton_pressed()
     timer->start(1);
     ui->timerLabel->setVisible(true);
 
-   initModel();
-
+    // parallel
     if(ui->isParallelBox->isChecked())
     {
-        drawPoints(&bestInlinerVector, QColor(0, 0, 255, 255));
     }
     else
     {
-        drawPoints(&bestInlinerVector, QColor(255, 0, 255, 255));
     }
-    timer->stop();
-}
 
-void MainWindow::updateTimer()
-{
-    timerMS++;
-    QString timerText = QString::number(timerMS);
-    ui->timerLabel->setText("Время выполнения: " + timerText);
-}
-
-void MainWindow::initModel()
-{
     int Perturb = 25;
     std::normal_distribution<GRANSAC::VPFloat> PerturbDist(0, Perturb);
     std::vector<std::shared_ptr<GRANSAC::AbstractParameter>> points;
     for (int i = 0; i < pointVector.size(); ++i)
     {
-        // ьььь
-        std::shared_ptr<GRANSAC::AbstractParameter> pt = std::make_shared<Point2D>(&pointVector.at(i));
+        std::shared_ptr<GRANSAC::AbstractParameter> pt = std::make_shared<Point2D>(pointVector.at(i).x(), pointVector.at(i).y());
         points.push_back(pt);
     }
     GRANSAC::RANSAC<Line2DModel, 2> estimator;
@@ -177,6 +168,50 @@ void MainWindow::initModel()
             bestInlinerVector.append(point);
         }
     }
+
+    drawPoints(&pointVector, QColor(255, 0, 0, 255));
+    drawPoints(&bestInlinerVector, QColor(0, 0, 255, 255));
+    auto BestLine = estimator.GetBestModel();
+    if (BestLine)
+    {
+        auto BestLinePt1 = std::dynamic_pointer_cast<Point2D>(BestLine->GetModelParams()[0]);
+        auto BestLinePt2 = std::dynamic_pointer_cast<Point2D>(BestLine->GetModelParams()[1]);
+        if (BestLinePt1 && BestLinePt2)
+        {
+            QPointF pt1(BestLinePt1->m_Point2D[0], BestLinePt1->m_Point2D[1]);
+            QPointF pt2(BestLinePt2->m_Point2D[0], BestLinePt2->m_Point2D[1]);
+            scene->addLine(pt1.x(),
+                           pt1.y(),
+                           pt2.x(),
+                           pt2.y(),
+                           QPen(QColor(0, 0, 255, 255)));
+            lineA = pt2.y() - pt1.y();
+            lineB = pt1.x() - pt2.x();
+            lineC = pt1.x() * pt1.x() - pt1.x() * pt2.y() - pt1.y() * pt1.x() + pt1.y() * pt2.x();
+        }
+    }
+
+    ui->lineTextLabel->setVisible(true);
+    ui->lineLabel->setVisible(true);
+    ui->lineLabel->setText("");
+    QString lineString;
+    lineString.append(QString::number(lineA));
+    lineString.append("*x + ");
+    lineString.append(QString::number(lineB));
+    lineString.append("*y + ");
+    lineString.append(QString::number(lineC));
+    lineString.append(" = 0");
+    ui->lineLabel->setText(lineString);
+
+    timer->stop();
+    out->write(lineString.toUtf8());
+}
+
+void MainWindow::updateTimer()
+{
+    timerMS++;
+    QString timerText = QString::number(timerMS);
+    ui->timerLabel->setText("Время выполнения: " + timerText);
 }
 
 void MainWindow::on_pushButton_pressed()
@@ -241,11 +276,24 @@ void MainWindow::on_clearButton_pressed()
 void MainWindow::clearData()
 {
     scene->clear();
+
     ui->timerLabel->setVisible(false);
+    ui->lineTextLabel->setVisible(false);
+    ui->lineLabel->setVisible(false);
+
     if(timer->isActive())
         timer->stop();
     while(!pointVector.isEmpty())
     {
         pointVector.clear();
     }
+
+    while(!bestInlinerVector.isEmpty())
+    {
+        bestInlinerVector.clear();
+    }
+
+    lineA = 0;
+    lineB = 0;
+    lineC = 0;
 }

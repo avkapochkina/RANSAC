@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QGraphicsScene>
+#include <QtNetwork/QUdpSocket>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -44,7 +45,7 @@ private:
     // все точки, находящиеся на графике
     QVector<QPointF> pointVector;
 
-    //
+    // inliner точки
     QVector<QPointF> bestInlinerVector;
 
     // перевод строки файла в QPointF
@@ -65,9 +66,6 @@ private:
     // очистка графика и pointVector
     void clearData();
 
-    // инициализация модели
-    void initModel();
-
     // радиус точки на графике
     double radius = 4.0;
 
@@ -75,10 +73,15 @@ private:
     // в которой засчитывается клик при удалении
     const double delta = 5.0;
 
+    // коэффициенты уравнения прямой
+    double lineA = 0, lineB = 0, lineC = 0;
+
     // таймер выполнения вычислений
     QTimer *timer;
 
     int timerMS = 0;
+
+    QUdpSocket *out;
 
     QColor gray;
 };
