@@ -32,6 +32,9 @@ private slots:
     // очистка данных
     void on_clearButton_pressed();
 
+    // обновление значения таймера
+    void updateTimer();
+
 private:
 
     Ui::MainWindow *ui;
@@ -39,7 +42,10 @@ private:
     QGraphicsScene *scene;
 
     // все точки, находящиеся на графике
-    QList<QPointF> pointList;
+    QVector<QPointF> pointVector;
+
+    //
+    QVector<QPointF> bestInlinerVector;
 
     // перевод строки файла в QPointF
     QPointF lineToPoint(QString line);
@@ -50,14 +56,17 @@ private:
     // нанесение точки point на график
     void drawSinglePoint(QPointF point, QColor color);
 
-    // нанесение на график всех точек, хранящихся в pointList
-    void drawPoints(QColor color);
+    // нанесение на график всех точек, хранящихся в vector
+    void drawPoints(QVector<QPointF>* vector, QColor color);
 
     // обработка нажатия кнопки мыши
     void mousePressEvent(QMouseEvent* event) override;
 
-    // очистка графика и pointList
+    // очистка графика и pointVector
     void clearData();
+
+    // инициализация модели
+    void initModel();
 
     // радиус точки на графике
     double radius = 4.0;
@@ -65,6 +74,11 @@ private:
     // радиус области вокруг точки,
     // в которой засчитывается клик при удалении
     const double delta = 5.0;
+
+    // таймер выполнения вычислений
+    QTimer *timer;
+
+    int timerMS = 0;
 
     QColor gray;
 };

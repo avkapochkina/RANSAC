@@ -13,6 +13,9 @@ SOURCES += \
     mainwindow.cpp
 
 HEADERS += \
+    include/AbstractModel.hpp \
+    include/GRANSAC.hpp \
+    include/LineModel.hpp \
     mainwindow.h
 
 FORMS += \
@@ -22,3 +25,9 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+QMAKE_CXXFLAGS += -fopenmp
+LIBS += -fopenmp
+INCLUDEPATH = D:\Qt\Tools\mingw810_64\lib\gcc\x86_64-w64-mingw32\8.1.0\include
+
+DISTFILES +=
