@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1036</width>
-    <height>691</height>
+    <width>1056</width>
+    <height>682</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -53,6 +53,33 @@
           <string>Выполнить распараллеленное вычисление</string>
          </property>
         </widget>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_2"/>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>Количество потоков:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="threadBox">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="value">
+            <number>1</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_3"/>
        </item>
        <item>
         <widget class="QLabel" name="timerLabel">
@@ -128,7 +155,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1036</width>
+     <width>1056</width>
      <height>25</height>
     </rect>
    </property>

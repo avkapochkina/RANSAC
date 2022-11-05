@@ -5,7 +5,7 @@
 #include <QMouseEvent>
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QTimer>
+#include <QElapsedTimer>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -20,11 +20,13 @@ MainWindow::MainWindow(QWidget *parent)
     gray = QColor(127, 127, 127, 255);
 
     ui->timerLabel->setVisible(false);
-    timer = new QTimer();
-    connect(timer, &QTimer::timeout, this, SLOT(updateTimer()));
 
     ui->lineTextLabel->setVisible(false);
     ui->lineLabel->setVisible(false);
+
+    ui->threadBox->setEnabled(false);
+    ui->threadBox->setMinimum(1);
+    ui->threadBox->setMaximum(omp_get_max_threads());
 
     out = new QUdpSocket(this);
     out->connectToHost(QHostAddress::LocalHost, 50081);
@@ -131,21 +133,19 @@ void MainWindow::on_calculationButton_pressed()
         return;
     }
     scene->clear();
-
-    timerMS = 0;
-    timer->start(1);
+    QElapsedTimer  timer;
+    timer.start();
     ui->timerLabel->setVisible(true);
 
-    // parallel
     if(ui->isParallelBox->isChecked())
     {
+        threads = ui->threadBox->value();
     }
     else
     {
+        threads = 1;
     }
 
-    int Perturb = 25;
-    std::normal_distribution<GRANSAC::VPFloat> PerturbDist(0, Perturb);
     std::vector<std::shared_ptr<GRANSAC::AbstractParameter>> points;
     for (int i = 0; i < pointVector.size(); ++i)
     {
@@ -194,6 +194,21 @@ void MainWindow::on_calculationButton_pressed()
     ui->lineTextLabel->setVisible(true);
     ui->lineLabel->setVisible(true);
     ui->lineLabel->setText("");
+
+    ui->lineLabel->setText(lineEquation());
+
+    ui->timerLabel->setText("Время выполнения: "
+                            + QString::number(timer.elapsed())
+                            + " ms");
+}
+
+void MainWindow::on_pushButton_pressed()
+{
+    out->write(lineEquation().toUtf8().data());
+}
+
+QString MainWindow::lineEquation()
+{
     QString lineString;
     lineString.append(QString::number(lineA));
     lineString.append("*x + ");
@@ -201,22 +216,7 @@ void MainWindow::on_calculationButton_pressed()
     lineString.append("*y + ");
     lineString.append(QString::number(lineC));
     lineString.append(" = 0");
-    ui->lineLabel->setText(lineString);
-
-    timer->stop();
-    out->write(lineString.toUtf8());
-}
-
-void MainWindow::updateTimer()
-{
-    timerMS++;
-    QString timerText = QString::number(timerMS);
-    ui->timerLabel->setText("Время выполнения: " + timerText);
-}
-
-void MainWindow::on_pushButton_pressed()
-{
-
+    return lineString;
 }
 
 void MainWindow::drawSinglePoint(QPointF point, QColor color)
@@ -277,12 +277,12 @@ void MainWindow::clearData()
 {
     scene->clear();
 
+    ui->graphicsView->update();
+
     ui->timerLabel->setVisible(false);
     ui->lineTextLabel->setVisible(false);
     ui->lineLabel->setVisible(false);
 
-    if(timer->isActive())
-        timer->stop();
     while(!pointVector.isEmpty())
     {
         pointVector.clear();
@@ -296,4 +296,13 @@ void MainWindow::clearData()
     lineA = 0;
     lineB = 0;
     lineC = 0;
+}
+
+void MainWindow::on_isParallelBox_toggled(bool checked)
+{
+    ui->threadBox->setEnabled(checked);
+}
+
+void MainWindow::on_threadBox_valueChanged(int arg1)
+{
 }

@@ -5,6 +5,8 @@
 #include <QGraphicsScene>
 #include <QtNetwork/QUdpSocket>
 
+extern int threads;
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -33,8 +35,9 @@ private slots:
     // очистка данных
     void on_clearButton_pressed();
 
-    // обновление значения таймера
-    void updateTimer();
+    void on_isParallelBox_toggled(bool checked);
+
+    void on_threadBox_valueChanged(int arg1);
 
 private:
 
@@ -66,6 +69,10 @@ private:
     // очистка графика и pointVector
     void clearData();
 
+    // получаение строки с уравнением прямой вида
+    // ax + bx + c = 0
+    QString lineEquation();
+
     // радиус точки на графике
     double radius = 4.0;
 
@@ -75,11 +82,6 @@ private:
 
     // коэффициенты уравнения прямой
     double lineA = 0, lineB = 0, lineC = 0;
-
-    // таймер выполнения вычислений
-    QTimer *timer;
-
-    int timerMS = 0;
 
     QUdpSocket *out;
 

@@ -11,6 +11,9 @@
 
 #include "AbstractModel.hpp"
 
+// для управления количеством потоков
+int threads;
+
 namespace GRANSAC
 {
 	// T - AbstractModel
@@ -31,10 +34,12 @@ namespace GRANSAC
 
 		std::vector<std::mt19937> m_RandEngines; // Mersenne twister high quality RNG that support *OpenMP* multi-threading
 
-	public:
+    public:
+
 		RANSAC(void)
 		{
-			int nThreads = std::max(1, omp_get_max_threads());
+            //int nThreads = std::max(1, omp_get_max_threads());
+            int nThreads = std::max(1, threads);
 			std::cout << "[ INFO ]: Maximum usable threads: " << nThreads << std::endl;
 			for (int i = 0; i < nThreads; ++i)
 			{
@@ -46,6 +51,8 @@ namespace GRANSAC
         }
 
         virtual ~RANSAC(void) {}
+
+        void SetThreads(int thr) { threads = thr; }
 
 		void Reset(void)
 		{
@@ -82,7 +89,8 @@ namespace GRANSAC
 			std::vector<std::vector<std::shared_ptr<AbstractParameter>>> InliersAccum(m_MaxIterations);
 			m_SampledModels.resize(m_MaxIterations);
 
-			int nThreads = std::max(1, omp_get_max_threads());
+            //int nThreads = std::max(1, omp_get_max_threads());
+            int nThreads = std::max(1, threads);
 			omp_set_dynamic(0); // Explicitly disable dynamic teams
 			omp_set_num_threads(nThreads);
 #pragma omp parallel for
