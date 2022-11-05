@@ -34,6 +34,12 @@ MainWindow::MainWindow(QWidget *parent)
 
     out = new QUdpSocket(this);
     out->connectToHost(QHostAddress::LocalHost, 50081);
+
+    ui->thresholdEdit->setValidator( new QIntValidator(0, 100, this) );
+    ui->thresholdEdit->setText("20");
+
+    ui->iterationsEdit->setValidator( new QIntValidator(0, 10000, this) );
+    ui->iterationsEdit->setText("100");
 }
 
 MainWindow::~MainWindow()
@@ -130,12 +136,28 @@ void MainWindow::on_saveButton_pressed()
 
 void MainWindow::on_calculationButton_pressed()
 {
+    int threshold, iterations;
     if(pointVector.size() == 0)
     {
         QMessageBox::information(nullptr, "Error", "Загрузите файл или отметьте точки на графике");
         return;
     }
+    if(ui->thresholdEdit->text() == "" && ui->iterationsEdit->text() == "")
+    {
+        QMessageBox::information(nullptr, "Error", "Введите пороговое значение и количество итераций");
+        return;
+    }
+
+    while(!bestInlinerVector.isEmpty())
+    {
+        bestInlinerVector.clear();
+    }
+    lineA = 0;
+
+    threshold = ui->thresholdEdit->text().toInt();
+    iterations = ui->thresholdEdit->text().toInt();
     scene->clear();
+
     QElapsedTimer  timer;
     timer.start();
     ui->timerLabel->setVisible(true);
@@ -156,7 +178,7 @@ void MainWindow::on_calculationButton_pressed()
         points.push_back(pt);
     }
     GRANSAC::RANSAC<Line2DModel, 2> estimator;
-    estimator.Initialize(20, 100); // Threshold, iterations
+    estimator.Initialize(threshold, iterations);
     estimator.Estimate(points);
 
     auto bestInliers = estimator.GetBestInliers();
@@ -172,6 +194,14 @@ void MainWindow::on_calculationButton_pressed()
         }
     }
 
+    // таймер
+    ui->lineTextLabel->setVisible(true);
+    ui->lineLabel->setVisible(true);
+    ui->lineLabel->setText("");
+    ui->timerLabel->setText("Время выполнения: "
+                            + QString::number(timer.elapsed())
+                            + " ms");
+
     drawPoints(&pointVector, QColor(255, 0, 0, 255));
     drawPoints(&bestInlinerVector, QColor(0, 0, 255, 255));
     auto BestLine = estimator.GetBestModel();
@@ -181,28 +211,30 @@ void MainWindow::on_calculationButton_pressed()
         auto BestLinePt2 = std::dynamic_pointer_cast<Point2D>(BestLine->GetModelParams()[1]);
         if (BestLinePt1 && BestLinePt2)
         {
-            QPointF pt1(BestLinePt1->m_Point2D[0], BestLinePt1->m_Point2D[1]);
-            QPointF pt2(BestLinePt2->m_Point2D[0], BestLinePt2->m_Point2D[1]);
-            scene->addLine(pt1.x(),
-                           pt1.y(),
-                           pt2.x(),
-                           pt2.y(),
+            QPointF ptMin(bestInlinerVector.at(0).x(), bestInlinerVector.at(0).y()); // min x
+            QPointF ptMax(bestInlinerVector.at(0).x(), bestInlinerVector.at(0).y()); // max x
+            for(int iter = 0; iter < bestInlinerVector.size(); iter++)
+            {
+                if(bestInlinerVector.at(iter).x() < ptMin.x())
+                    ptMin = bestInlinerVector.at(iter);
+                if(bestInlinerVector.at(iter).x() > ptMax.x())
+                    ptMax = bestInlinerVector.at(iter);
+            }
+            lineA = ptMax.y() - ptMin.y();
+            lineB = ptMin.x() - ptMax.x();
+            lineC = ptMin.x() * ptMin.y()
+                  - ptMin.x() * ptMax.y()
+                  - ptMin.y() * ptMin.x()
+                  + ptMin.y() * ptMax.x();
+            scene->addLine(ptMin.x(),
+                           ptMin.y(),
+                           ptMax.x(),
+                           ptMax.y(),
                            QPen(QColor(0, 0, 255, 255)));
-            lineA = pt2.y() - pt1.y();
-            lineB = pt1.x() - pt2.x();
-            lineC = pt1.x() * pt1.x() - pt1.x() * pt2.y() - pt1.y() * pt1.x() + pt1.y() * pt2.x();
         }
     }
 
-    ui->lineTextLabel->setVisible(true);
-    ui->lineLabel->setVisible(true);
-    ui->lineLabel->setText("");
-
     ui->lineLabel->setText(lineEquation());
-
-    ui->timerLabel->setText("Время выполнения: "
-                            + QString::number(timer.elapsed())
-                            + " ms");
 }
 
 void MainWindow::on_pushButton_pressed()
