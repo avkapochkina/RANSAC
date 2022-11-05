@@ -45,6 +45,8 @@ private:
 
     QGraphicsScene *scene;
 
+    QRect baseRect;
+
     // все точки, находящиеся на графике
     QVector<QPointF> pointVector;
 

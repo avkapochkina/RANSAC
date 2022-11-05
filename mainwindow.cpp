@@ -14,9 +14,13 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     scene = new QGraphicsScene();
+    baseRect = ui->graphicsView->rect();
     ui->graphicsView->setMouseTracking(true);
-    ui->graphicsView->setSceneRect(ui->graphicsView->rect());
+    //ui->graphicsView->setSceneRect(baseRect);
     ui->graphicsView->setScene(scene);
+
+    ui->graphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    ui->graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     gray = QColor(127, 127, 127, 255);
 
     ui->timerLabel->setVisible(false);
@@ -97,7 +101,6 @@ void MainWindow::on_loadButton_clicked()
     }
     loadFile.close();
     drawPoints(&pointVector, gray);
-    // resize?
 }
 
 void MainWindow::on_saveButton_pressed()
@@ -242,6 +245,7 @@ void MainWindow::drawPoints(QVector<QPointF> *vector, QColor color)
                    QPen(color),
                    QBrush(color));
     }
+    //ui->graphicsView->fitInView(baseRect);
 }
 
 QPointF MainWindow::lineToPoint(QString line)
